@@ -21,6 +21,7 @@ type worker struct {
 	consumer *nsq.Consumer
 	conf     config.WorkerConfig
 	log      log.Interface
+	uc       *usecase.Usecase
 }
 
 func Init(conf config.WorkerConfig, uc *usecase.Usecase, log log.Interface) Interface {
@@ -36,6 +37,7 @@ func Init(conf config.WorkerConfig, uc *usecase.Usecase, log log.Interface) Inte
 		consumer: consumer,
 		conf:     conf,
 		log:      log,
+		uc:       uc,
 	}
 
 	// add the handler

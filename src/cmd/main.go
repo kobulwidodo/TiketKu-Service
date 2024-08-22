@@ -58,7 +58,7 @@ func main() {
 
 			d := domain.Init(db, redis, log)
 
-			uc := usecase.Init(auth, d, nsq)
+			uc := usecase.Init(auth, d, nsq, log)
 
 			r := rest.Init(cfg.Gin, uc, auth, log)
 			r.Run()
@@ -75,7 +75,7 @@ func main() {
 
 			d := domain.Init(db, redis, log)
 
-			uc := usecase.Init(auth, d, nil)
+			uc := usecase.Init(auth, d, nil, log)
 
 			w := booking.Init(cfg.Workers.BookingWorker, uc, log)
 			w.Run()

@@ -29,6 +29,7 @@ func (r *rest) httpRespSuccess(ctx *gin.Context, code int, message string, data 
 
 func (r *rest) httpRespError(ctx *gin.Context, code int, err error) {
 	c := ctx.Request.Context()
+	r.log.Error(c, err)
 	resp := entity.Response{
 		Meta: entity.Meta{
 			Message:   err.Error(),

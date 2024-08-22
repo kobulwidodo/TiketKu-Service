@@ -16,6 +16,13 @@ type SeatParam struct {
 	CategoryId uint `uri:"category_id"`
 }
 
+type UpdateSeatParam struct {
+	ID         uint
+	EventId    uint
+	CategoryId uint
+	IsReserved bool
+}
+
 type SeatResponse struct {
 	EventName string
 	Category  string
