@@ -17,6 +17,7 @@ type Interface interface {
 	Error(ctx context.Context, obj interface{})
 	Info(ctx context.Context, obj interface{})
 	Fatal(ctx context.Context, obj interface{})
+	Debug(ctx context.Context, obj interface{})
 }
 
 type Config struct {
