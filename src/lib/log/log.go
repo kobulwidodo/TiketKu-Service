@@ -50,6 +50,10 @@ func (l *logger) Info(ctx context.Context, obj interface{}) {
 	l.log.Info().Fields(getContextFields(ctx)).Msg(fmt.Sprint(getCaller(obj)))
 }
 
+func (l *logger) Debug(ctx context.Context, obj interface{}) {
+	l.log.Debug().Fields(getContextFields(ctx)).Msg(fmt.Sprint(getCaller(obj)))
+}
+
 func (l *logger) Error(ctx context.Context, obj interface{}) {
 	l.log.Error().Fields(getContextFields(ctx)).Msg(fmt.Sprint(getCaller(obj)))
 }
