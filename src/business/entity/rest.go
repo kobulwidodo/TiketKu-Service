@@ -1,5 +1,10 @@
 package entity
 
+const (
+	XRequestId = "x-request-id"
+	RequestId  = "RequestId"
+)
+
 type Response struct {
 	Meta Meta        `json:"meta"`
 	Data interface{} `json:"data"`

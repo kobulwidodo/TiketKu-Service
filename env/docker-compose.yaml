@@ -13,3 +13,50 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_TCP_PORT: 3306
+
+  redis:
+    image: redis:6
+    restart: on-failure
+    entrypoint:
+      - "redis-server"
+    volumes:
+      - "./storage/redis/conf:/usr/lib/redis/conf"
+      - "./storage/redis/modules:/usr/lib/redis/modules"
+      - "./storage/redis/data:/data"
+    ports:
+      - "6379:6379"
+
+  nsqlookupd:
+    image: nsqio/nsq
+    command: /nsqlookupd
+    ports:
+      - "4160:4160" # TCP port for clients
+      - "4161:4161" # HTTP port for clients
+    networks:
+      - nsq-network
+
+  nsqd:
+    image: nsqio/nsq
+    command: /nsqd --broadcast-address=nsqd --lookupd-tcp-address=nsqlookupd:4160
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4150:4150" # TCP port for producers
+      - "4151:4151" # HTTP port for producers and consumers
+    networks:
+      - nsq-network
+
+  nsqadmin:
+    image: nsqio/nsq
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    depends_on:
+      - nsqlookupd
+      - nsqd
+    ports:
+      - "4171:4171" # HTTP port for NSQ admin UI
+    networks:
+      - nsq-network
+
+networks:
+  nsq-network:
+    driver: bridge

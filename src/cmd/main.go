@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"go-clean/src/business/domain"
 	"go-clean/src/business/usecase"
 	"go-clean/src/handler/rest"
+	"go-clean/src/handler/worker/booking"
 	"go-clean/src/lib/auth"
 	"go-clean/src/lib/configreader"
+	"go-clean/src/lib/log"
+	"go-clean/src/lib/nsq"
+	"go-clean/src/lib/redis"
 	"go-clean/src/lib/sql"
 	"go-clean/src/utils/config"
-	"log"
 
 	_ "go-clean/docs/swagger"
 
@@ -34,13 +38,11 @@ func main() {
 	})
 	configReader.ReadConfig(&cfg)
 
+	log := log.Init(log.Config{
+		Level: "debug",
+	})
+
 	auth := auth.Init()
-
-	db := sql.Init(cfg.SQL)
-
-	d := domain.Init(db)
-
-	uc := usecase.Init(auth, d)
 
 	rootCmd := &cobra.Command{Use: "app"}
 
@@ -48,14 +50,41 @@ func main() {
 		Use:   "rest",
 		Short: "Run the REST API Server",
 		Run: func(cmd *cobra.Command, args []string) {
-			r := rest.Init(cfg.Gin, uc, auth)
+			redis := redis.Init(cfg.Redis)
+
+			nsq := nsq.Init(cfg.Nsq)
+
+			db := sql.Init(cfg.SQL)
+
+			d := domain.Init(db, redis, log)
+
+			uc := usecase.Init(auth, d, nsq)
+
+			r := rest.Init(cfg.Gin, uc, auth, log)
 			r.Run()
 		},
 	}
 
-	rootCmd.AddCommand(restCmd)
+	bookingWorker := &cobra.Command{
+		Use:   "booking-worker",
+		Short: "Run the Booking Worker",
+		Run: func(cmd *cobra.Command, args []string) {
+			redis := redis.Init(cfg.Redis)
+
+			db := sql.Init(cfg.SQL)
+
+			d := domain.Init(db, redis, log)
+
+			uc := usecase.Init(auth, d, nil)
+
+			w := booking.Init(cfg.Workers.BookingWorker, uc, log)
+			w.Run()
+		},
+	}
+
+	rootCmd.AddCommand(restCmd, bookingWorker)
 
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatalf("error executing command : %v", err)
+		log.Error(context.Background(), err)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"go-clean/docs/swagger"
 	"go-clean/src/business/usecase"
 	"go-clean/src/lib/auth"
+	logger "go-clean/src/lib/log"
 	"go-clean/src/utils/config"
 	"log"
 	"net/http"
@@ -31,9 +32,10 @@ type rest struct {
 	conf config.GinConfig
 	uc   *usecase.Usecase
 	auth auth.Interface
+	log  logger.Interface
 }
 
-func Init(conf config.GinConfig, uc *usecase.Usecase, auth auth.Interface) REST {
+func Init(conf config.GinConfig, uc *usecase.Usecase, auth auth.Interface, log logger.Interface) REST {
 	r := &rest{}
 	once.Do(func() {
 		switch conf.Mode {
@@ -52,6 +54,7 @@ func Init(conf config.GinConfig, uc *usecase.Usecase, auth auth.Interface) REST 
 			http: httpServ,
 			uc:   uc,
 			auth: auth,
+			log:  log,
 		}
 
 		switch r.conf.CORS.Mode {
@@ -130,6 +133,10 @@ func (r *rest) Register() {
 		})
 	})
 
+	commoneMiddlewares := gin.HandlersChain{
+		r.addFieldsToContext,
+	}
+
 	api := r.http.Group("/api")
 	v1 := api.Group("/v1")
 
@@ -139,9 +146,21 @@ func (r *rest) Register() {
 		})
 	})
 
-	auth := v1.Group("/auth")
+	auth := v1.Group("/auth", commoneMiddlewares...)
 	auth.POST("/register", r.RegisterUser)
 	auth.POST("/login", r.LoginUser)
+
+	v1.GET("/event", r.GetListEvent)
+	v1.GET("/event/:event_id", r.GetEvent)
+
+	// Category
+	v1.GET("/event/:event_id/category", r.GetListCategory)
+
+	// Seat
+	v1.GET("/event/:event_id/category/:category_id/seat", r.GetListSeat)
+
+	// Booking
+	v1.POST("/event/:event_id/category/:category_id/book", r.VerifyUser, r.CreateBooking)
 }
 
 func (r *rest) registerSwaggerRoutes() {

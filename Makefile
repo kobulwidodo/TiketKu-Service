@@ -12,3 +12,7 @@ swag-install:
 run-rest-api:
 	@make swaggo
 	@go run ./src/cmd/main.go rest
+
+.PHONE: run-booking-worker
+run-booking-worker:
+	@go run ./src/cmd/main.go booking-worker
