@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 	"fmt"
+	"go-clean/src/lib/appcontext"
 	"go-clean/src/lib/errors"
 	"os"
 	"sync"
@@ -82,12 +83,7 @@ func getCaller(obj interface{}) interface{} {
 func getContextFields(ctx context.Context) map[string]interface{} {
 	cf := map[string]interface{}{}
 
-	rid, ok := ctx.Value("RequestId").(string)
-	if !ok {
-		return cf
-	}
-
-	cf["request_id"] = rid
+	cf["request_id"] = appcontext.GetRequestID(ctx)
 
 	return cf
 }

@@ -11,7 +11,8 @@ type Response struct {
 }
 
 type Meta struct {
-	Message string `json:"message"`
-	Code    int    `json:"code"`
-	IsError bool   `json:"is_error"`
+	RequestID string `json:"request_id"`
+	Message   string `json:"message"`
+	Code      int    `json:"code"`
+	IsError   bool   `json:"is_error"`
 }

@@ -1,9 +1,9 @@
 package rest
 
 import (
-	"context"
 	"fmt"
 	"go-clean/src/business/entity"
+	"go-clean/src/lib/appcontext"
 	"go-clean/src/lib/errors"
 	"net/http"
 	"os"
@@ -14,11 +14,13 @@ import (
 )
 
 func (r *rest) httpRespSuccess(ctx *gin.Context, code int, message string, data interface{}) {
+	c := ctx.Request.Context()
 	resp := entity.Response{
 		Meta: entity.Meta{
-			Message: message,
-			Code:    code,
-			IsError: false,
+			Message:   message,
+			Code:      code,
+			IsError:   false,
+			RequestID: appcontext.GetRequestID(c),
 		},
 		Data: data,
 	}
@@ -26,12 +28,13 @@ func (r *rest) httpRespSuccess(ctx *gin.Context, code int, message string, data 
 }
 
 func (r *rest) httpRespError(ctx *gin.Context, code int, err error) {
-	r.log.Error(ctx, err)
+	c := ctx.Request.Context()
 	resp := entity.Response{
 		Meta: entity.Meta{
-			Message: err.Error(),
-			Code:    code,
-			IsError: true,
+			Message:   err.Error(),
+			Code:      code,
+			IsError:   true,
+			RequestID: appcontext.GetRequestID(c),
 		},
 		Data: nil,
 	}
@@ -100,7 +103,7 @@ func (r *rest) addFieldsToContext(ctx *gin.Context) {
 	}
 
 	c := ctx.Request.Context()
-	c = context.WithValue(c, entity.RequestId, reqid)
+	c = appcontext.SetRequestID(c, reqid)
 	ctx.Request = ctx.Request.WithContext(c)
 	ctx.Next()
 }

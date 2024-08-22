@@ -138,7 +138,7 @@ func (r *rest) Register() {
 	}
 
 	api := r.http.Group("/api")
-	v1 := api.Group("/v1")
+	v1 := api.Group("/v1", commoneMiddlewares...)
 
 	v1.GET("/", r.VerifyUser, func(ctx *gin.Context) {
 		ctx.JSON(http.StatusOK, gin.H{
@@ -146,7 +146,7 @@ func (r *rest) Register() {
 		})
 	})
 
-	auth := v1.Group("/auth", commoneMiddlewares...)
+	auth := v1.Group("/auth")
 	auth.POST("/register", r.RegisterUser)
 	auth.POST("/login", r.LoginUser)
 
