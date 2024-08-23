@@ -68,3 +68,8 @@ type BookingSeatDetail struct {
 	Number int
 	Price  uint
 }
+
+type BookingStatusResponse struct {
+	BookingID string
+	Status    string
+}

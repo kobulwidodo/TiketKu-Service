@@ -22,6 +22,7 @@ type Interface interface {
 	Create(ctx context.Context, param entity.CreateBookingParam) (entity.BookingResponse, error)
 	ProcessBooking(ctx context.Context, param entity.BookingTopicPayload) error
 	Get(ctx context.Context, param entity.BookingParam) (entity.BookingDetailResponse, error)
+	CheckStatus(ctx context.Context, param entity.BookingParam) (entity.BookingStatusResponse, error)
 }
 
 type booking struct {
@@ -250,6 +251,22 @@ func (b *booking) Get(ctx context.Context, param entity.BookingParam) (entity.Bo
 			Price:  category.Price,
 		})
 	}
+
+	return res, nil
+}
+
+func (b *booking) CheckStatus(ctx context.Context, param entity.BookingParam) (entity.BookingStatusResponse, error) {
+	res := entity.BookingStatusResponse{}
+
+	booking, err := b.booking.Get(entity.BookingParam{
+		BookingID: param.BookingID,
+	})
+	if err != nil {
+		return res, errors.NewError("failed to get booking data", err.Error())
+	}
+
+	res.BookingID = booking.BookingID
+	res.Status = booking.Status
 
 	return res, nil
 }
