@@ -8,3 +8,7 @@ type BookingDetail struct {
 	SeatId    uint
 	Price     uint
 }
+
+type BookingDetailParam struct {
+	BookingId uint
+}

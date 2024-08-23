@@ -27,7 +27,7 @@ func Init(auth auth.Interface, d *domain.Domains, nsq nsq.Interface, log log.Int
 		Event:    event.Init(d.Event),
 		Category: category.Init(d.Category),
 		Seat:     seat.Init(d.Seat, d.Category, d.Event),
-		Booking:  booking.Init(auth, d.Booking, d.Category, d.BookingDetail, d.Seat, nsq, log),
+		Booking:  booking.Init(auth, d.Booking, d.Category, d.BookingDetail, d.Seat, d.Event, nsq, log),
 	}
 
 	return uc

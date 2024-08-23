@@ -7,6 +7,7 @@ import (
 )
 
 type Interface interface {
+	Get(param entity.BookingParam) (entity.Booking, error)
 	Create(booking entity.Booking) (entity.Booking, error)
 	Update(selectParam entity.BookingParam, updateParam entity.UpdateBookingParam) error
 }
@@ -21,6 +22,15 @@ func Init(db *gorm.DB) Interface {
 	}
 
 	return b
+}
+
+func (b *booking) Get(param entity.BookingParam) (entity.Booking, error) {
+	res := entity.Booking{}
+	if err := b.db.Where(param).First(&res).Error; err != nil {
+		return res, err
+	}
+
+	return res, nil
 }
 
 func (b *booking) Create(booking entity.Booking) (entity.Booking, error) {

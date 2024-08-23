@@ -8,6 +8,7 @@ import (
 
 type Interface interface {
 	Create(bookingDetail entity.BookingDetail) error
+	GetList(param entity.BookingDetailParam) ([]entity.BookingDetail, error)
 }
 
 type bookingDetail struct {
@@ -28,4 +29,13 @@ func (bd *bookingDetail) Create(bookingDetail entity.BookingDetail) error {
 	}
 
 	return nil
+}
+
+func (bd *bookingDetail) GetList(param entity.BookingDetailParam) ([]entity.BookingDetail, error) {
+	res := []entity.BookingDetail{}
+	if err := bd.db.Where(param).Find(&res).Error; err != nil {
+		return res, err
+	}
+
+	return res, nil
 }

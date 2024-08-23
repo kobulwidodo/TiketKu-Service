@@ -2,6 +2,7 @@ package rest
 
 import (
 	"go-clean/src/business/entity"
+	"go-clean/src/lib/errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -40,4 +41,32 @@ func (r *rest) CreateBooking(ctx *gin.Context) {
 	}
 
 	r.httpRespSuccess(ctx, http.StatusCreated, "sucessfully create a booking", booking)
+}
+
+// @Summary Get Booking
+// @Description Get a Booking
+// @Security BearerAuth
+// @Tags Booking
+// @Produce json
+// @Param booking_id path string true "booking id param"
+// @Success 200 {object} entity.Response{data=[]entity.BookingDetailResponse{}}
+// @Failure 400 {object} entity.Response{}
+// @Failure 401 {object} entity.Response{}
+// @Failure 404 {object} entity.Response{}
+// @Failure 500 {object} entity.Response{}
+// @Router /api/v1/booking/{booking_id} [GET]
+func (r *rest) GetBooking(ctx *gin.Context) {
+	var param entity.BookingParam
+	if err := ctx.ShouldBindUri(&param); err != nil {
+		r.httpRespError(ctx, http.StatusUnprocessableEntity, errors.NewError("request is not valid", err.Error()))
+		return
+	}
+
+	booking, err := r.uc.Booking.Get(ctx.Request.Context(), param)
+	if err != nil {
+		r.httpRespError(ctx, http.StatusInternalServerError, err)
+		return
+	}
+
+	r.httpRespSuccess(ctx, http.StatusOK, "sucessfully get booking data", booking)
 }

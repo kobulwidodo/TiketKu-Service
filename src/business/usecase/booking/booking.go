@@ -7,6 +7,7 @@ import (
 	bookingDom "go-clean/src/business/domain/booking"
 	bookingDetailDom "go-clean/src/business/domain/booking_detail"
 	categoryDom "go-clean/src/business/domain/category"
+	eventDom "go-clean/src/business/domain/event"
 	seatDom "go-clean/src/business/domain/seat"
 	"go-clean/src/business/entity"
 	"go-clean/src/lib/appcontext"
@@ -20,24 +21,27 @@ import (
 type Interface interface {
 	Create(ctx context.Context, param entity.CreateBookingParam) (entity.BookingResponse, error)
 	ProcessBooking(ctx context.Context, param entity.BookingTopicPayload) error
+	Get(ctx context.Context, param entity.BookingParam) (entity.BookingDetailResponse, error)
 }
 
 type booking struct {
 	booking       bookingDom.Interface
 	category      categoryDom.Interface
 	bookingDetail bookingDetailDom.Interface
+	event         eventDom.Interface
 	seat          seatDom.Interface
 	nsq           nsq.Interface
 	auth          auth.Interface
 	log           log.Interface
 }
 
-func Init(auth auth.Interface, bd bookingDom.Interface, cd categoryDom.Interface, bdd bookingDetailDom.Interface, sd seatDom.Interface, nsq nsq.Interface, log log.Interface) Interface {
+func Init(auth auth.Interface, bd bookingDom.Interface, cd categoryDom.Interface, bdd bookingDetailDom.Interface, sd seatDom.Interface, ed eventDom.Interface, nsq nsq.Interface, log log.Interface) Interface {
 	b := &booking{
 		auth:          auth,
 		booking:       bd,
 		category:      cd,
 		bookingDetail: bdd,
+		event:         ed,
 		seat:          sd,
 		nsq:           nsq,
 		log:           log,
@@ -120,8 +124,8 @@ func (b *booking) Create(ctx context.Context, param entity.CreateBookingParam) (
 	b.log.Info(ctx, fmt.Sprintf("sucessfully push new booking message : %s", string(payloadMarshalled)))
 
 	return entity.BookingResponse{
-		TempBookingID: bookingID,
-		Status:        "PROCESSING",
+		BookingID: bookingID,
+		Status:    "PROCESSING",
 	}, nil
 }
 
@@ -180,4 +184,72 @@ func (b *booking) ProcessBooking(ctx context.Context, param entity.BookingTopicP
 	b.log.Info(ctx, fmt.Sprintf("sucessfully process the message : ", param.BookingID))
 
 	return nil
+}
+
+func (b *booking) Get(ctx context.Context, param entity.BookingParam) (entity.BookingDetailResponse, error) {
+	res := entity.BookingDetailResponse{}
+
+	booking, err := b.booking.Get(param)
+	if err != nil {
+		return res, errors.NewError("booking data is not available", err.Error())
+	}
+
+	bookingDetails, err := b.bookingDetail.GetList(entity.BookingDetailParam{
+		BookingId: booking.ID,
+	})
+	if err != nil {
+		return res, errors.NewError("failed to get booking details", err.Error())
+	}
+
+	if len(bookingDetails) == 0 {
+		errmsg := "there is no booking details"
+		return res, errors.NewError(errmsg, errmsg)
+	}
+
+	seatIDs := []uint{}
+	for _, b := range bookingDetails {
+		seatIDs = append(seatIDs, b.SeatId)
+	}
+
+	seats, err := b.seat.GetListByIDs(seatIDs, entity.SeatParam{})
+	if err != nil {
+		return res, errors.NewError("failed to get seat data", err.Error())
+	}
+
+	event, err := b.event.Get(entity.EventParam{
+		ID: booking.EventId,
+	})
+	if err != nil {
+		return res, errors.NewError("failed to get event detail", err.Error())
+	}
+
+	category, err := b.category.Get(entity.CategoryParam{
+		ID:      booking.ID,
+		EventID: booking.EventId,
+	})
+	if err != nil {
+		return res, errors.NewError("failed to get category detail", err.Error())
+	}
+
+	res.ID = booking.ID
+	res.BookingID = booking.BookingID
+	res.Status = booking.Status
+	res.UserId = booking.UserId
+	res.EventId = booking.EventId
+	res.EventName = event.Name
+	res.EventVenue = event.Venue
+	res.CategoryName = category.Name
+	res.TotalAmount = booking.TotalAmount
+	res.TotalPrice = booking.TotalAmount * int(category.Price)
+
+	for _, s := range seats {
+		res.Seat = append(res.Seat, entity.BookingSeatDetail{
+			SeatID: s.ID,
+			Row:    s.Row,
+			Number: s.Number,
+			Price:  category.Price,
+		})
+	}
+
+	return res, nil
 }

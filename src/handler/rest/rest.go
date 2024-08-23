@@ -161,6 +161,7 @@ func (r *rest) Register() {
 
 	// Booking
 	v1.POST("/event/:event_id/category/:category_id/book", r.VerifyUser, r.CreateBooking)
+	v1.GET("/booking/:booking_id", r.GetBooking)
 }
 
 func (r *rest) registerSwaggerRoutes() {

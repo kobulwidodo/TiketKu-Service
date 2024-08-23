@@ -20,7 +20,8 @@ type Booking struct {
 }
 
 type BookingParam struct {
-	ID uint
+	ID        uint
+	BookingID string `uri:"booking_id"`
 }
 
 type CreateBookingParam struct {
@@ -34,8 +35,8 @@ type UpdateBookingParam struct {
 }
 
 type BookingResponse struct {
-	TempBookingID string
-	Status        string
+	BookingID string
+	Status    string
 }
 
 type BookingTopicPayload struct {
@@ -45,4 +46,25 @@ type BookingTopicPayload struct {
 	CategoryID uint
 	SeatIDs    []uint
 	RequestID  string
+}
+
+type BookingDetailResponse struct {
+	ID           uint
+	BookingID    string
+	Status       string
+	UserId       uint
+	EventId      uint
+	EventName    string
+	EventVenue   string
+	CategoryName string
+	TotalAmount  int
+	TotalPrice   int
+	Seat         []BookingSeatDetail
+}
+
+type BookingSeatDetail struct {
+	SeatID uint
+	Row    string
+	Number int
+	Price  uint
 }
