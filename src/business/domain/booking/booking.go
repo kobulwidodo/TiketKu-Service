@@ -42,7 +42,7 @@ func (b *booking) Create(booking entity.Booking) (entity.Booking, error) {
 }
 
 func (b *booking) Update(selectParam entity.BookingParam, updateParam entity.UpdateBookingParam) error {
-	if err := b.db.Model(&entity.Booking{}).Where(selectParam).Updates(updateParam).Error; err != nil {
+	if err := b.db.Model(entity.Booking{}).Where(selectParam).Updates(updateParam).Error; err != nil {
 		return err
 	}
 

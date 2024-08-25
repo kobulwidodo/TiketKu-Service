@@ -7,6 +7,7 @@ import (
 const (
 	BookingTopic                  string = "booking_topic"
 	WaitingForSelectPaymentStatus string = "waiting_for_select_payment"
+	WaitingToPay                  string = "waiting_to_pay"
 	FailedStatus                  string = "failed"
 )
 

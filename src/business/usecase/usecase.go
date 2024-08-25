@@ -6,6 +6,7 @@ import (
 	"go-clean/src/business/usecase/category"
 	"go-clean/src/business/usecase/event"
 	paymentoption "go-clean/src/business/usecase/payment_option"
+	"go-clean/src/business/usecase/paymet"
 	"go-clean/src/business/usecase/seat"
 	"go-clean/src/business/usecase/user"
 	"go-clean/src/lib/auth"
@@ -21,6 +22,7 @@ type Usecase struct {
 	Booking       booking.Interface
 	log           log.Interface
 	PaymentOption paymentoption.Interface
+	Payment       paymet.Interface
 }
 
 func Init(auth auth.Interface, d *domain.Domains, nsq nsq.Interface, log log.Interface) *Usecase {
@@ -31,6 +33,7 @@ func Init(auth auth.Interface, d *domain.Domains, nsq nsq.Interface, log log.Int
 		Seat:          seat.Init(d.Seat, d.Category, d.Event),
 		Booking:       booking.Init(auth, d.Booking, d.Category, d.BookingDetail, d.Seat, d.Event, nsq, log),
 		PaymentOption: paymentoption.Init(d.PaymentOption),
+		Payment:       paymet.Init(auth, d.MidtransTransaction, d.Booking, d.BookingDetail, d.PaymentOption, d.Midtrans),
 	}
 
 	return uc

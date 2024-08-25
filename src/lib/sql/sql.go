@@ -23,7 +23,7 @@ func Init(cfg Config) *gorm.DB {
 		panic(err)
 	}
 
-	if err := db.AutoMigrate(&entity.User{}, &entity.Booking{}, &entity.BookingDetail{}, &entity.Event{}, &entity.Payment{}, &entity.Seat{}, &entity.Category{}, &entity.PaymentOption{}); err != nil {
+	if err := db.AutoMigrate(&entity.User{}, &entity.Booking{}, &entity.BookingDetail{}, &entity.Event{}, &entity.Seat{}, &entity.Category{}, &entity.PaymentOption{}, &entity.MidtransTransaction{}); err != nil {
 		panic(err)
 	}
 

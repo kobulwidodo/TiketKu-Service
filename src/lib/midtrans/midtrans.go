@@ -2,7 +2,6 @@ package midtrans
 
 import (
 	"fmt"
-	"time"
 
 	midtransSdk "github.com/midtrans/midtrans-go"
 	"github.com/midtrans/midtrans-go/coreapi"
@@ -40,7 +39,7 @@ func (m *midtrans) CreateOrder(param CreateOrderParam) (*coreapi.ChargeResponse,
 	fmt.Printf("isi param : %#v\n", param)
 	chargeReq := &coreapi.ChargeReq{
 		TransactionDetails: midtransSdk.TransactionDetails{
-			OrderID:  fmt.Sprintf("%s-%d-%d", "SYN", param.OrderID, time.Now().Unix()),
+			OrderID:  param.BookingID,
 			GrossAmt: param.GrossAmount,
 		},
 		Items: param.convertToItemDetails(),

@@ -166,6 +166,9 @@ func (r *rest) Register() {
 
 	// Payment Option
 	v1.GET("/payment-options", r.GetListPaymentOption)
+
+	// Payment
+	v1.POST("/pay", r.VerifyUser, r.CreatePayment)
 }
 
 func (r *rest) registerSwaggerRoutes() {

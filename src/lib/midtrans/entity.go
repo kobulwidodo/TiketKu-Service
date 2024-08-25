@@ -4,18 +4,18 @@ import (
 	midtransSdk "github.com/midtrans/midtrans-go"
 )
 
-type paymentCode string
+type PaymentCode string
 
 const (
-	GopayPayment    paymentCode = "gopay"
-	TransferBRI     paymentCode = "transfer-bri"
-	TransferMandiri paymentCode = "transfer-mandiri"
-	TransferBNI     paymentCode = "transfer-bni"
+	GopayPayment    PaymentCode = "gopay"
+	TransferBRI     PaymentCode = "transfer-bri"
+	TransferMandiri PaymentCode = "transfer-mandiri"
+	TransferBNI     PaymentCode = "transfer-bni"
 )
 
 type CreateOrderParam struct {
-	PaymentID       paymentCode
-	OrderID         uint
+	PaymentID       PaymentCode
+	BookingID       string
 	GrossAmount     int64
 	ItemsDetails    []ItemsDetails
 	CustomerDetails CustomerDetails
