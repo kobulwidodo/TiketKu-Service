@@ -35,3 +35,6 @@ docs/swagger
 # Local specific files
 .DS_Store
 .vscode
+
+# testing file
+testing.json
