@@ -70,6 +70,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
+	github.com/midtrans/midtrans-go v1.3.8
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
