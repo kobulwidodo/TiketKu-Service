@@ -1,6 +1,7 @@
 package config
 
 import (
+	"go-clean/src/lib/midtrans"
 	"go-clean/src/lib/nsq"
 	"go-clean/src/lib/redis"
 	"go-clean/src/lib/sql"
@@ -8,12 +9,13 @@ import (
 )
 
 type Application struct {
-	Meta    ApplicationMeta
-	Gin     GinConfig
-	SQL     sql.Config
-	Redis   redis.Config
-	Nsq     nsq.Config
-	Workers WorkersConfig
+	Meta     ApplicationMeta
+	Gin      GinConfig
+	SQL      sql.Config
+	Redis    redis.Config
+	Nsq      nsq.Config
+	Midtrans midtrans.Config
+	Workers  WorkersConfig
 }
 
 type ApplicationMeta struct {

@@ -163,6 +163,9 @@ func (r *rest) Register() {
 	v1.POST("/event/:event_id/category/:category_id/book", r.VerifyUser, r.CreateBooking)
 	v1.GET("/booking/:booking_id", r.GetBooking)
 	v1.GET("/booking/:booking_id/status", r.GetBookingStatus)
+
+	// Payment Option
+	v1.GET("/payment-options", r.GetListPaymentOption)
 }
 
 func (r *rest) registerSwaggerRoutes() {

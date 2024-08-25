@@ -9,6 +9,7 @@ import (
 	"go-clean/src/lib/auth"
 	"go-clean/src/lib/configreader"
 	"go-clean/src/lib/log"
+	"go-clean/src/lib/midtrans"
 	"go-clean/src/lib/nsq"
 	"go-clean/src/lib/redis"
 	"go-clean/src/lib/sql"
@@ -54,9 +55,11 @@ func main() {
 
 			nsq := nsq.Init(cfg.Nsq)
 
+			midtrans := midtrans.Init(cfg.Midtrans)
+
 			db := sql.Init(cfg.SQL)
 
-			d := domain.Init(db, redis, log)
+			d := domain.Init(db, redis, midtrans, log)
 
 			uc := usecase.Init(auth, d, nsq, log)
 
@@ -71,9 +74,11 @@ func main() {
 		Run: func(cmd *cobra.Command, args []string) {
 			redis := redis.Init(cfg.Redis)
 
+			midtrans := midtrans.Init(cfg.Midtrans)
+
 			db := sql.Init(cfg.SQL)
 
-			d := domain.Init(db, redis, log)
+			d := domain.Init(db, redis, midtrans, log)
 
 			uc := usecase.Init(auth, d, nil, log)
 
