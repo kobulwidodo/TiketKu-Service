@@ -1,4 +1,4 @@
-package booking
+package worker
 
 import (
 	"context"

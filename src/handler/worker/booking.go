@@ -1,4 +1,4 @@
-package booking
+package worker
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/nsqio/go-nsq"
 )
 
-func (w *worker) HandleMessage(msg *nsq.Message) error {
+func (w *worker) ProcessBooking(msg *nsq.Message) error {
 	var payload entity.BookingTopicPayload
 	if err := json.Unmarshal(msg.Body, &payload); err != nil {
 		return errors.NewError(err.Error(), err.Error())

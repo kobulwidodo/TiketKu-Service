@@ -5,7 +5,7 @@ import (
 	"go-clean/src/business/domain"
 	"go-clean/src/business/usecase"
 	"go-clean/src/handler/rest"
-	"go-clean/src/handler/worker/booking"
+	"go-clean/src/handler/worker"
 	"go-clean/src/lib/auth"
 	"go-clean/src/lib/configreader"
 	"go-clean/src/lib/log"
@@ -43,6 +43,16 @@ func main() {
 		Level: "debug",
 	})
 
+	redis := redis.Init(cfg.Redis)
+
+	nsq := nsq.Init(cfg.Nsq)
+
+	midtrans := midtrans.Init(cfg.Midtrans)
+
+	db := sql.Init(cfg.SQL)
+
+	d := domain.Init(db, redis, midtrans, log)
+
 	auth := auth.Init()
 
 	rootCmd := &cobra.Command{Use: "app"}
@@ -51,18 +61,7 @@ func main() {
 		Use:   "rest",
 		Short: "Run the REST API Server",
 		Run: func(cmd *cobra.Command, args []string) {
-			redis := redis.Init(cfg.Redis)
-
-			nsq := nsq.Init(cfg.Nsq)
-
-			midtrans := midtrans.Init(cfg.Midtrans)
-
-			db := sql.Init(cfg.SQL)
-
-			d := domain.Init(db, redis, midtrans, log)
-
 			uc := usecase.Init(auth, d, nsq, log)
-
 			r := rest.Init(cfg.Gin, uc, auth, log)
 			r.Run()
 		},
@@ -72,17 +71,8 @@ func main() {
 		Use:   "booking-worker",
 		Short: "Run the Booking Worker",
 		Run: func(cmd *cobra.Command, args []string) {
-			redis := redis.Init(cfg.Redis)
-
-			midtrans := midtrans.Init(cfg.Midtrans)
-
-			db := sql.Init(cfg.SQL)
-
-			d := domain.Init(db, redis, midtrans, log)
-
 			uc := usecase.Init(auth, d, nil, log)
-
-			w := booking.Init(cfg.Workers.BookingWorker, uc, log)
+			w := worker.Init(cfg.Workers.BookingWorker, uc, log)
 			w.Run()
 		},
 	}

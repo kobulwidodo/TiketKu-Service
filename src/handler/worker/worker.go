@@ -1,7 +1,8 @@
-package booking
+package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"go-clean/src/business/usecase"
 	"go-clean/src/lib/log"
@@ -63,4 +64,13 @@ func (w *worker) Run() {
 	// Wait for all messages to be processed before exiting
 	<-w.consumer.StopChan
 	w.log.Info(context.Background(), "Worker stopped")
+}
+
+func (w *worker) HandleMessage(msg *nsq.Message) error {
+	switch w.conf.Topic {
+	case "booking_topic":
+		return w.ProcessBooking(msg)
+	}
+
+	return errors.New("topics does not exist")
 }
