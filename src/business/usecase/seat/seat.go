@@ -1,6 +1,7 @@
 package seat
 
 import (
+	"context"
 	categoryDom "go-clean/src/business/domain/category"
 	eventDom "go-clean/src/business/domain/event"
 	seatDom "go-clean/src/business/domain/seat"
@@ -9,7 +10,7 @@ import (
 )
 
 type Interface interface {
-	GetList(param entity.SeatParam) (entity.SeatResponse, error)
+	GetList(ctx context.Context, param entity.SeatParam) (entity.SeatResponse, error)
 }
 
 type seat struct {
@@ -28,7 +29,7 @@ func Init(sd seatDom.Interface, cd categoryDom.Interface, ed eventDom.Interface)
 	return s
 }
 
-func (s *seat) GetList(param entity.SeatParam) (entity.SeatResponse, error) {
+func (s *seat) GetList(ctx context.Context, param entity.SeatParam) (entity.SeatResponse, error) {
 	res := entity.SeatResponse{}
 
 	event, err := s.event.Get(entity.EventParam{
@@ -38,7 +39,7 @@ func (s *seat) GetList(param entity.SeatParam) (entity.SeatResponse, error) {
 		return res, errors.NewError("failed to get event data", err.Error())
 	}
 
-	category, err := s.category.Get(entity.CategoryParam{
+	category, err := s.category.Get(ctx, entity.CategoryParam{
 		ID: param.CategoryId,
 	})
 	if err != nil {

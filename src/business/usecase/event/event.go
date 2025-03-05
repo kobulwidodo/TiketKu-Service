@@ -1,30 +1,37 @@
 package event
 
 import (
+	"context"
 	"go-clean/src/business/entity"
+	tracer "go-clean/src/lib/otel"
 
 	eventDom "go-clean/src/business/domain/event"
 )
 
 type Interface interface {
-	GetList(param entity.EventParam) ([]entity.Event, error)
+	GetList(ctx context.Context, param entity.EventParam) ([]entity.Event, error)
 	Get(param entity.EventParam) (entity.Event, error)
 }
 
 type event struct {
-	event eventDom.Interface
+	event      eventDom.Interface
+	oteltracer tracer.Interface
 }
 
-func Init(ed eventDom.Interface) Interface {
+func Init(ed eventDom.Interface, ot tracer.Interface) Interface {
 	e := &event{
-		event: ed,
+		event:      ed,
+		oteltracer: ot,
 	}
 
 	return e
 }
 
-func (e *event) GetList(param entity.EventParam) ([]entity.Event, error) {
-	events, err := e.event.GetList(param)
+func (e *event) GetList(ctx context.Context, param entity.EventParam) ([]entity.Event, error) {
+	ctx, span := e.oteltracer.Start(ctx, "GetListEvent")
+	defer span.End()
+
+	events, err := e.event.GetList(ctx, param)
 	if err != nil {
 		return events, err
 	}

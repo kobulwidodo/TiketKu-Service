@@ -20,7 +20,7 @@ import (
 // @Failure 500 {object} entity.Response{}
 // @Router /api/v1/event [GET]
 func (r *rest) GetListEvent(ctx *gin.Context) {
-	events, err := r.uc.Event.GetList(entity.EventParam{})
+	events, err := r.uc.Event.GetList(ctx.Request.Context(), entity.EventParam{})
 	if err != nil {
 		r.httpRespError(ctx, http.StatusInternalServerError, err)
 		return

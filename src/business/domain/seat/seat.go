@@ -13,9 +13,9 @@ import (
 
 type Interface interface {
 	GetList(param entity.SeatParam) ([]entity.Seat, error)
-	GetListByIDs(ids []uint, param entity.SeatParam) ([]entity.Seat, error)
-	UpdateStatusBatch(seatIds []uint, status bool) error
-	CheckBatchSeatReserved(seatIDs []uint) (bool, error)
+	GetListByIDs(ctx context.Context, ids []uint, param entity.SeatParam) ([]entity.Seat, error)
+	UpdateStatusBatch(ctx context.Context, seatIds []uint, status bool) error
+	CheckBatchSeatReserved(ctx context.Context, seatIDs []uint) (bool, error)
 	LockBatchSeat(ctx context.Context, seatIDs []uint) (bool, error)
 	ReleaseLockBatchSeat(ctx context.Context, seatIDs []uint) error
 }
@@ -46,26 +46,26 @@ func (s *seat) GetList(param entity.SeatParam) ([]entity.Seat, error) {
 	return res, nil
 }
 
-func (s *seat) GetListByIDs(ids []uint, param entity.SeatParam) ([]entity.Seat, error) {
+func (s *seat) GetListByIDs(ctx context.Context, ids []uint, param entity.SeatParam) ([]entity.Seat, error) {
 	res := []entity.Seat{}
 
-	if err := s.db.Where("id IN ?", ids).Where(param).Find(&res).Error; err != nil {
+	if err := s.db.WithContext(ctx).Where("id IN ?", ids).Where(param).Find(&res).Error; err != nil {
 		return res, err
 	}
 
 	return res, nil
 }
 
-func (s *seat) UpdateStatusBatch(seatIds []uint, status bool) error {
-	if err := s.db.Model(&entity.Seat{}).Where("id IN ?", seatIds).Update("is_reserved", status).Error; err != nil {
+func (s *seat) UpdateStatusBatch(ctx context.Context, seatIds []uint, status bool) error {
+	if err := s.db.WithContext(ctx).Model(&entity.Seat{}).Where("id IN ?", seatIds).Update("is_reserved", status).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *seat) CheckBatchSeatReserved(seatIDs []uint) (bool, error) {
+func (s *seat) CheckBatchSeatReserved(ctx context.Context, seatIDs []uint) (bool, error) {
 	var count int64
-	if err := s.db.Model(&entity.Seat{}).Where("id IN ? AND is_reserved = true", seatIDs).Count(&count).Error; err != nil {
+	if err := s.db.WithContext(ctx).Model(&entity.Seat{}).Where("id IN ? AND is_reserved = true", seatIDs).Count(&count).Error; err != nil {
 		return false, err
 	}
 

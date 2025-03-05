@@ -8,6 +8,7 @@ const (
 	BookingTopic                  string = "booking_topic"
 	WaitingForSelectPaymentStatus string = "waiting_for_select_payment"
 	WaitingToPay                  string = "waiting_to_pay"
+	PaymentSuccessStatus          string = "payment_success"
 	FailedStatus                  string = "failed"
 )
 
@@ -23,6 +24,7 @@ type Booking struct {
 type BookingParam struct {
 	ID        uint
 	BookingID string `uri:"booking_id"`
+	Status    string
 }
 
 type CreateBookingParam struct {
@@ -41,12 +43,13 @@ type BookingResponse struct {
 }
 
 type BookingTopicPayload struct {
-	BookingID  string
-	UserID     uint
-	EventID    uint
-	CategoryID uint
-	SeatIDs    []uint
-	RequestID  string
+	BookingID    string
+	UserID       uint
+	EventID      uint
+	CategoryID   uint
+	SeatIDs      []uint
+	RequestID    string
+	TraceContext map[string]string
 }
 
 type BookingDetailResponse struct {

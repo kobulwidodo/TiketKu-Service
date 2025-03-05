@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go-clean/src/business/entity"
 
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -20,6 +21,11 @@ func Init(cfg Config) *gorm.DB {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", cfg.Username, cfg.Password, cfg.Host, cfg.Port, cfg.Database)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
+		panic(err)
+	}
+
+	// Instrument GORM with OpenTelemetry
+	if err := db.Use(otelgorm.NewPlugin()); err != nil {
 		panic(err)
 	}
 

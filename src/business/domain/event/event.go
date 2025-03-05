@@ -1,32 +1,36 @@
 package event
 
 import (
+	"context"
 	"go-clean/src/business/entity"
+	tracer "go-clean/src/lib/otel"
 
 	"gorm.io/gorm"
 )
 
 type Interface interface {
-	GetList(param entity.EventParam) ([]entity.Event, error)
+	GetList(context.Context, entity.EventParam) ([]entity.Event, error)
 	Get(param entity.EventParam) (entity.Event, error)
 }
 
 type event struct {
-	db *gorm.DB
+	db         *gorm.DB
+	oteltracer tracer.Interface
 }
 
-func Init(db *gorm.DB) Interface {
+func Init(db *gorm.DB, ot tracer.Interface) Interface {
 	e := &event{
-		db: db,
+		db:         db,
+		oteltracer: ot,
 	}
 
 	return e
 }
 
-func (e *event) GetList(param entity.EventParam) ([]entity.Event, error) {
+func (e *event) GetList(ctx context.Context, param entity.EventParam) ([]entity.Event, error) {
 	res := []entity.Event{}
 
-	if err := e.db.Where(param).Find(&res).Error; err != nil {
+	if err := e.db.WithContext(ctx).Where(param).Find(&res).Error; err != nil {
 		return res, err
 	}
 

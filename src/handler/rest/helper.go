@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func (r *rest) httpRespSuccess(ctx *gin.Context, code int, message string, data interface{}) {
@@ -106,5 +108,11 @@ func (r *rest) addFieldsToContext(ctx *gin.Context) {
 	c := ctx.Request.Context()
 	c = appcontext.SetRequestID(c, reqid)
 	ctx.Request = ctx.Request.WithContext(c)
+
+	span := trace.SpanFromContext(c)
+	span.SetAttributes(
+		attribute.String("requestID", reqid),
+	)
+
 	ctx.Next()
 }

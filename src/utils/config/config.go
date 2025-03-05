@@ -3,19 +3,21 @@ package config
 import (
 	"go-clean/src/lib/midtrans"
 	"go-clean/src/lib/nsq"
+	tracer "go-clean/src/lib/otel"
 	"go-clean/src/lib/redis"
 	"go-clean/src/lib/sql"
 	"time"
 )
 
 type Application struct {
-	Meta     ApplicationMeta
-	Gin      GinConfig
-	SQL      sql.Config
-	Redis    redis.Config
-	Nsq      nsq.Config
-	Midtrans midtrans.Config
-	Workers  WorkersConfig
+	Meta       ApplicationMeta
+	Gin        GinConfig
+	SQL        sql.Config
+	Redis      redis.Config
+	Nsq        nsq.Config
+	Midtrans   midtrans.Config
+	Workers    WorkersConfig
+	OtelTracer tracer.Config
 }
 
 type ApplicationMeta struct {

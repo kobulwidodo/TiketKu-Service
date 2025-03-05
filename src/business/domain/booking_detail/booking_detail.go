@@ -1,13 +1,14 @@
 package bookingdetail
 
 import (
+	"context"
 	"go-clean/src/business/entity"
 
 	"gorm.io/gorm"
 )
 
 type Interface interface {
-	Create(bookingDetail entity.BookingDetail) error
+	Create(ctx context.Context, bookingDetail entity.BookingDetail) error
 	GetList(param entity.BookingDetailParam) ([]entity.BookingDetail, error)
 }
 
@@ -23,8 +24,8 @@ func Init(db *gorm.DB) Interface {
 	return bd
 }
 
-func (bd *bookingDetail) Create(bookingDetail entity.BookingDetail) error {
-	if err := bd.db.Create(&bookingDetail).Error; err != nil {
+func (bd *bookingDetail) Create(ctx context.Context, bookingDetail entity.BookingDetail) error {
+	if err := bd.db.WithContext(ctx).Create(&bookingDetail).Error; err != nil {
 		return err
 	}
 

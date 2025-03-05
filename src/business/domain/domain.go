@@ -12,6 +12,7 @@ import (
 	"go-clean/src/business/domain/user"
 	"go-clean/src/lib/log"
 	midtransLib "go-clean/src/lib/midtrans"
+	tracer "go-clean/src/lib/otel"
 	"go-clean/src/lib/redis"
 
 	"gorm.io/gorm"
@@ -29,10 +30,10 @@ type Domains struct {
 	MidtransTransaction midtranstransaction.Interface
 }
 
-func Init(db *gorm.DB, redis redis.Interface, m midtransLib.Interface, log log.Interface) *Domains {
+func Init(db *gorm.DB, redis redis.Interface, m midtransLib.Interface, log log.Interface, ot tracer.Interface) *Domains {
 	d := &Domains{
 		User:                user.Init(db),
-		Event:               event.Init(db),
+		Event:               event.Init(db, ot),
 		Seat:                seat.Init(db, redis, log),
 		Booking:             booking.Init(db),
 		BookingDetail:       bookingdetail.Init(db),

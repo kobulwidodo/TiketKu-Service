@@ -12,12 +12,12 @@ const (
 
 type MidtransTransaction struct {
 	gorm.Model
-	TransactionID uint
-	MidtransID    string
-	OrderID       string
-	PaymentType   string
-	Status        string
-	PaymentData   string
+	BookingId   uint
+	MidtransID  string
+	OrderID     string
+	PaymentType string
+	Status      string
+	PaymentData string
 }
 
 type PaymentData struct {
@@ -26,9 +26,9 @@ type PaymentData struct {
 }
 
 type MidtransTransactionParam struct {
-	ID            uint   `json:"id"`
-	OrderID       string `uri:"order_id" json:"order_id"`
-	TransactionID uint   `uri:"transaction_id"`
+	ID        uint   `json:"id"`
+	OrderID   string `uri:"order_id" json:"order_id"`
+	BookingId uint   `uri:"booking_id"`
 }
 
 type UpdateMidtransTransactionParam struct {

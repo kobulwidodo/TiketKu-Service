@@ -1,6 +1,7 @@
 package booking
 
 import (
+	"context"
 	"go-clean/src/business/entity"
 
 	"gorm.io/gorm"
@@ -8,7 +9,7 @@ import (
 
 type Interface interface {
 	Get(param entity.BookingParam) (entity.Booking, error)
-	Create(booking entity.Booking) (entity.Booking, error)
+	Create(ctx context.Context, booking entity.Booking) (entity.Booking, error)
 	Update(selectParam entity.BookingParam, updateParam entity.UpdateBookingParam) error
 }
 
@@ -33,8 +34,8 @@ func (b *booking) Get(param entity.BookingParam) (entity.Booking, error) {
 	return res, nil
 }
 
-func (b *booking) Create(booking entity.Booking) (entity.Booking, error) {
-	if err := b.db.Create(&booking).Error; err != nil {
+func (b *booking) Create(ctx context.Context, booking entity.Booking) (entity.Booking, error) {
+	if err := b.db.WithContext(ctx).Create(&booking).Error; err != nil {
 		return entity.Booking{}, err
 	}
 

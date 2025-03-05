@@ -11,6 +11,7 @@ import (
 	"go-clean/src/lib/log"
 	"go-clean/src/lib/midtrans"
 	"go-clean/src/lib/nsq"
+	tracer "go-clean/src/lib/otel"
 	"go-clean/src/lib/redis"
 	"go-clean/src/lib/sql"
 	"go-clean/src/utils/config"
@@ -45,13 +46,16 @@ func main() {
 
 	redis := redis.Init(cfg.Redis)
 
+	oteltracer := tracer.Init(cfg.OtelTracer)
+	defer oteltracer.Shutdown(context.Background())
+
 	nsq := nsq.Init(cfg.Nsq)
 
 	midtrans := midtrans.Init(cfg.Midtrans)
 
 	db := sql.Init(cfg.SQL)
 
-	d := domain.Init(db, redis, midtrans, log)
+	d := domain.Init(db, redis, midtrans, log, oteltracer)
 
 	auth := auth.Init()
 
@@ -61,8 +65,8 @@ func main() {
 		Use:   "rest",
 		Short: "Run the REST API Server",
 		Run: func(cmd *cobra.Command, args []string) {
-			uc := usecase.Init(auth, d, nsq, log)
-			r := rest.Init(cfg.Gin, uc, auth, log)
+			uc := usecase.Init(auth, d, nsq, log, oteltracer)
+			r := rest.Init(cfg.Gin, uc, auth, log, oteltracer)
 			r.Run()
 		},
 	}
@@ -71,7 +75,7 @@ func main() {
 		Use:   "booking-worker",
 		Short: "Run the Booking Worker",
 		Run: func(cmd *cobra.Command, args []string) {
-			uc := usecase.Init(auth, d, nil, log)
+			uc := usecase.Init(auth, d, nil, log, oteltracer)
 			w := worker.Init(cfg.Workers.BookingWorker, uc, log)
 			w.Run()
 		},

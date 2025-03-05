@@ -7,6 +7,7 @@ import (
 	"go-clean/src/business/usecase"
 	"go-clean/src/lib/auth"
 	logger "go-clean/src/lib/log"
+	tracer "go-clean/src/lib/otel"
 	"go-clean/src/utils/config"
 	"log"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 var once = &sync.Once{}
@@ -28,14 +30,15 @@ type REST interface {
 }
 
 type rest struct {
-	http *gin.Engine
-	conf config.GinConfig
-	uc   *usecase.Usecase
-	auth auth.Interface
-	log  logger.Interface
+	http       *gin.Engine
+	conf       config.GinConfig
+	uc         *usecase.Usecase
+	auth       auth.Interface
+	log        logger.Interface
+	oteltracer tracer.Interface
 }
 
-func Init(conf config.GinConfig, uc *usecase.Usecase, auth auth.Interface, log logger.Interface) REST {
+func Init(conf config.GinConfig, uc *usecase.Usecase, auth auth.Interface, log logger.Interface, oteltracer tracer.Interface) REST {
 	r := &rest{}
 	once.Do(func() {
 		switch conf.Mode {
@@ -50,11 +53,12 @@ func Init(conf config.GinConfig, uc *usecase.Usecase, auth auth.Interface, log l
 		httpServ := gin.Default()
 
 		r = &rest{
-			conf: conf,
-			http: httpServ,
-			uc:   uc,
-			auth: auth,
-			log:  log,
+			conf:       conf,
+			http:       httpServ,
+			uc:         uc,
+			auth:       auth,
+			log:        log,
+			oteltracer: oteltracer,
 		}
 
 		switch r.conf.CORS.Mode {
@@ -77,6 +81,8 @@ func Init(conf config.GinConfig, uc *usecase.Usecase, auth auth.Interface, log l
 
 		// Set Recovery
 		r.http.Use(gin.Recovery())
+
+		r.http.Use(otelgin.Middleware("ticket-booking-service"))
 
 		r.Register()
 	})

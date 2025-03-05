@@ -12,6 +12,7 @@ import (
 	"go-clean/src/lib/auth"
 	"go-clean/src/lib/log"
 	"go-clean/src/lib/nsq"
+	tracer "go-clean/src/lib/otel"
 )
 
 type Usecase struct {
@@ -25,13 +26,13 @@ type Usecase struct {
 	Payment       paymet.Interface
 }
 
-func Init(auth auth.Interface, d *domain.Domains, nsq nsq.Interface, log log.Interface) *Usecase {
+func Init(auth auth.Interface, d *domain.Domains, nsq nsq.Interface, log log.Interface, oteltracer tracer.Interface) *Usecase {
 	uc := &Usecase{
 		User:          user.Init(d.User, auth),
-		Event:         event.Init(d.Event),
+		Event:         event.Init(d.Event, oteltracer),
 		Category:      category.Init(d.Category),
 		Seat:          seat.Init(d.Seat, d.Category, d.Event),
-		Booking:       booking.Init(auth, d.Booking, d.Category, d.BookingDetail, d.Seat, d.Event, nsq, log),
+		Booking:       booking.Init(auth, d.Booking, d.Category, d.BookingDetail, d.Seat, d.Event, nsq, log, oteltracer),
 		PaymentOption: paymentoption.Init(d.PaymentOption),
 		Payment:       paymet.Init(auth, d.MidtransTransaction, d.Booking, d.BookingDetail, d.PaymentOption, d.Midtrans),
 	}

@@ -8,6 +8,8 @@ import (
 	"go-clean/src/lib/errors"
 
 	"github.com/nsqio/go-nsq"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 )
 
 func (w *worker) ProcessBooking(msg *nsq.Message) error {
@@ -16,7 +18,9 @@ func (w *worker) ProcessBooking(msg *nsq.Message) error {
 		return errors.NewError(err.Error(), err.Error())
 	}
 
-	ctx := w.initContext(context.Background(), payload.RequestID)
+	propagator := otel.GetTextMapPropagator()
+	carrier := propagation.MapCarrier(payload.TraceContext)
+	ctx := propagator.Extract(context.Background(), carrier)
 
 	w.log.Info(ctx, fmt.Sprintf("processing new message : %#v", payload))
 

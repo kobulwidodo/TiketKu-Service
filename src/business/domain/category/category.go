@@ -1,6 +1,7 @@
 package category
 
 import (
+	"context"
 	"go-clean/src/business/entity"
 
 	"gorm.io/gorm"
@@ -8,7 +9,7 @@ import (
 
 type Interface interface {
 	GetList(param entity.CategoryParam) ([]entity.Category, error)
-	Get(param entity.CategoryParam) (entity.Category, error)
+	Get(ctx context.Context, param entity.CategoryParam) (entity.Category, error)
 }
 
 type category struct {
@@ -33,10 +34,10 @@ func (c *category) GetList(param entity.CategoryParam) ([]entity.Category, error
 	return res, nil
 }
 
-func (c *category) Get(param entity.CategoryParam) (entity.Category, error) {
+func (c *category) Get(ctx context.Context, param entity.CategoryParam) (entity.Category, error) {
 	res := entity.Category{}
 
-	if err := c.db.Where(param).First(&res).Error; err != nil {
+	if err := c.db.WithContext(ctx).Where(param).First(&res).Error; err != nil {
 		return res, err
 	}
 

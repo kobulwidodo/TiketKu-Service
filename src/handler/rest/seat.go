@@ -28,7 +28,7 @@ func (r *rest) GetListSeat(ctx *gin.Context) {
 		return
 	}
 
-	event, err := r.uc.Seat.GetList(seatParam)
+	event, err := r.uc.Seat.GetList(ctx.Request.Context(), seatParam)
 	if err != nil {
 		r.httpRespError(ctx, http.StatusInternalServerError, err)
 		return

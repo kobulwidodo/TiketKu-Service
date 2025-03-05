@@ -15,7 +15,14 @@ import (
 	"go-clean/src/lib/errors"
 	"go-clean/src/lib/log"
 	"go-clean/src/lib/nsq"
+	tracer "go-clean/src/lib/otel"
 	"time"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Interface interface {
@@ -34,9 +41,10 @@ type booking struct {
 	nsq           nsq.Interface
 	auth          auth.Interface
 	log           log.Interface
+	oteltracer    tracer.Interface
 }
 
-func Init(auth auth.Interface, bd bookingDom.Interface, cd categoryDom.Interface, bdd bookingDetailDom.Interface, sd seatDom.Interface, ed eventDom.Interface, nsq nsq.Interface, log log.Interface) Interface {
+func Init(auth auth.Interface, bd bookingDom.Interface, cd categoryDom.Interface, bdd bookingDetailDom.Interface, sd seatDom.Interface, ed eventDom.Interface, nsq nsq.Interface, log log.Interface, ot tracer.Interface) Interface {
 	b := &booking{
 		auth:          auth,
 		booking:       bd,
@@ -46,35 +54,51 @@ func Init(auth auth.Interface, bd bookingDom.Interface, cd categoryDom.Interface
 		seat:          sd,
 		nsq:           nsq,
 		log:           log,
+		oteltracer:    ot,
 	}
 
 	return b
 }
 
 func (b *booking) Create(ctx context.Context, param entity.CreateBookingParam) (entity.BookingResponse, error) {
+	ctx, span := b.oteltracer.Start(ctx, "Create")
+	defer span.End()
+
 	// get user info
 	user, err := b.auth.GetUserAuthInfo(ctx)
 	if err != nil {
-		return entity.BookingResponse{}, errors.NewError("authenticate failed", err.Error())
+		err := errors.NewError("authenticate failed", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return entity.BookingResponse{}, err
 	}
 
 	// validate the seat
-	seats, err := b.seat.GetListByIDs(param.SeatIDs, entity.SeatParam{
+	seats, err := b.seat.GetListByIDs(ctx, param.SeatIDs, entity.SeatParam{
 		EventId:    param.EventId,
 		CategoryId: param.CategoryId,
 	})
 	if err != nil {
-		return entity.BookingResponse{}, errors.NewError("there is something wrong", err.Error())
+		err := errors.NewError("there is something wrong", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return entity.BookingResponse{}, err
 	}
 
 	if len(seats) != len(param.SeatIDs) {
-		return entity.BookingResponse{}, errors.NewError("different categories in the same order", "different categories in the same order")
+		err := errors.NewError("different categories in the same order", "different categories in the same order")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return entity.BookingResponse{}, err
 	}
 
 	// lock the seat on redis
 	lock, err := b.seat.LockBatchSeat(ctx, param.SeatIDs)
 	if err != nil {
-		return entity.BookingResponse{}, errors.NewError("failed to process the seat", err.Error())
+		err := errors.NewError("failed to process the seat", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return entity.BookingResponse{}, err
 	}
 
 	// incase there is an error, release the lock
@@ -91,14 +115,23 @@ func (b *booking) Create(ctx context.Context, param entity.CreateBookingParam) (
 	}
 
 	// check seat is_reserved status
-	isAvailable, err := b.seat.CheckBatchSeatReserved(param.SeatIDs)
+	isAvailable, err := b.seat.CheckBatchSeatReserved(ctx, param.SeatIDs)
 	if err != nil {
-		return entity.BookingResponse{}, errors.NewError("failed to get seat status", err.Error())
+		err := errors.NewError("failed to get seat status", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return entity.BookingResponse{}, err
 	}
+
+	span.AddEvent("Seat Validation Complete", trace.WithAttributes(
+		attribute.Bool("isAvailable", isAvailable),
+	))
 
 	// if its not available, than cancel the book
 	if !isAvailable {
 		err = errors.NewError("one of your seat has already taken, pick another", "seat has already taken")
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return entity.BookingResponse{}, err
 	}
 
@@ -111,16 +144,31 @@ func (b *booking) Create(ctx context.Context, param entity.CreateBookingParam) (
 		SeatIDs:    param.SeatIDs,
 		RequestID:  appcontext.GetRequestID(ctx),
 	}
+
+	carrier := propagation.MapCarrier{}
+	otel.GetTextMapPropagator().Inject(ctx, carrier)
+	bookingTopicPayload.TraceContext = carrier
+
 	payloadMarshalled, err := json.Marshal(bookingTopicPayload)
 	if err != nil {
-		return entity.BookingResponse{}, errors.NewError("there was something wrong, contact the administrator", err.Error())
+		err = errors.NewError("there was something wrong, contact the administrator", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return entity.BookingResponse{}, err
 	}
 
 	// publish booking message to nsq
 	err = b.nsq.Publish(entity.BookingTopic, payloadMarshalled)
 	if err != nil {
-		return entity.BookingResponse{}, errors.NewError("failed to booking, try again later", err.Error())
+		err = errors.NewError("failed to booking, try again later", err.Error())
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return entity.BookingResponse{}, err
 	}
+
+	span.AddEvent("Booking published to NSQ", trace.WithAttributes(
+		attribute.String("payload", string(payloadMarshalled)),
+	))
 
 	b.log.Info(ctx, fmt.Sprintf("sucessfully push new booking message : %s", string(payloadMarshalled)))
 
@@ -131,14 +179,19 @@ func (b *booking) Create(ctx context.Context, param entity.CreateBookingParam) (
 }
 
 func (b *booking) ProcessBooking(ctx context.Context, param entity.BookingTopicPayload) error {
+	ctx, span := b.oteltracer.Start(ctx, "ProcessBooking")
+	defer span.End()
+
 	// set the seat isreserved status to true
-	err := b.seat.UpdateStatusBatch(param.SeatIDs, true)
+	err := b.seat.UpdateStatusBatch(ctx, param.SeatIDs, true)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return errors.NewError(err.Error(), err.Error())
 	}
 
 	// create booking data in database - waiting for payment status
-	bookingData, err := b.booking.Create(entity.Booking{
+	bookingData, err := b.booking.Create(ctx, entity.Booking{
 		BookingID:   param.BookingID,
 		UserId:      param.UserID,
 		EventId:     param.EventID,
@@ -146,23 +199,29 @@ func (b *booking) ProcessBooking(ctx context.Context, param entity.BookingTopicP
 		Status:      entity.WaitingForSelectPaymentStatus,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return errors.NewError(err.Error(), err.Error())
 	}
 
-	category, err := b.category.Get(entity.CategoryParam{
+	category, err := b.category.Get(ctx, entity.CategoryParam{
 		ID:      param.CategoryID,
 		EventID: param.EventID,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return errors.NewError(err.Error(), err.Error())
 	}
 
 	for _, s := range param.SeatIDs {
-		if err := b.bookingDetail.Create(entity.BookingDetail{
+		if err := b.bookingDetail.Create(ctx, entity.BookingDetail{
 			BookingId: bookingData.ID,
 			SeatId:    s,
 			Price:     category.Price,
 		}); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return errors.NewError(err.Error(), err.Error())
 		}
 	}
@@ -172,13 +231,15 @@ func (b *booking) ProcessBooking(ctx context.Context, param entity.BookingTopicP
 		b.seat.ReleaseLockBatchSeat(ctx, param.SeatIDs)
 		// if there is an error in process, then revert every changes
 		if err != nil {
-			b.seat.UpdateStatusBatch(param.SeatIDs, false)
+			b.seat.UpdateStatusBatch(ctx, param.SeatIDs, false)
 			b.booking.Update(entity.BookingParam{
 				ID: bookingData.ID,
 			}, entity.UpdateBookingParam{
 				Status: entity.FailedStatus,
 			})
 			b.log.Error(ctx, err)
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 		}
 	}()
 
@@ -212,7 +273,7 @@ func (b *booking) Get(ctx context.Context, param entity.BookingParam) (entity.Bo
 		seatIDs = append(seatIDs, b.SeatId)
 	}
 
-	seats, err := b.seat.GetListByIDs(seatIDs, entity.SeatParam{})
+	seats, err := b.seat.GetListByIDs(ctx, seatIDs, entity.SeatParam{})
 	if err != nil {
 		return res, errors.NewError("failed to get seat data", err.Error())
 	}
@@ -224,7 +285,7 @@ func (b *booking) Get(ctx context.Context, param entity.BookingParam) (entity.Bo
 		return res, errors.NewError("failed to get event detail", err.Error())
 	}
 
-	category, err := b.category.Get(entity.CategoryParam{
+	category, err := b.category.Get(ctx, entity.CategoryParam{
 		ID:      booking.ID,
 		EventID: booking.EventId,
 	})
