@@ -94,12 +94,12 @@ func (p *payment) Create(ctx context.Context, param entity.CreatePaymentParam) (
 	}
 
 	_, err = p.midtransTransaction.Create(entity.MidtransTransaction{
-		TransactionID: booking.ID,
-		MidtransID:    coreApiRes.TransactionID,
-		OrderID:       coreApiRes.OrderID,
-		PaymentType:   coreApiRes.PaymentType,
-		Status:        entity.StatusPending,
-		PaymentData:   string(paymentDataMarshalled),
+		BookingId:   booking.ID,
+		MidtransID:  coreApiRes.TransactionID,
+		OrderID:     coreApiRes.OrderID,
+		PaymentType: coreApiRes.PaymentType,
+		Status:      entity.StatusPending,
+		PaymentData: string(paymentDataMarshalled),
 	})
 	if err != nil {
 		return res, errors.NewError("failed to store payment detail", err.Error())
